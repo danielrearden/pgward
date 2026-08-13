@@ -1,0 +1,64 @@
+{
+  "name": "pgward",
+  "version": "0.1.0",
+  "description": "A configurable linter for Postgres DDL and migrations",
+  "license": "MIT",
+  "author": "Daniel Rearden <danielrearden@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danielrearden/pgward.git"
+  },
+  "homepage": "https://github.com/danielrearden/pgward#readme",
+  "bugs": "https://github.com/danielrearden/pgward/issues",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "default": "./dist/testing.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "packageManager": "pnpm@10.15.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "pnpm run typecheck && pnpm run build && pnpm test",
+    "prepack": "pnpm run clean && pnpm run build",
+    "prepublishOnly": "pnpm run typecheck && pnpm test"
+  },
+  "keywords": [
+    "postgres",
+    "postgresql",
+    "lint",
+    "linter",
+    "migration",
+    "ddl",
+    "sql"
+  ],
+  "dependencies": {
+    "@supabase/pg-parser": "^0.1.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.9.3"
+  }
+}

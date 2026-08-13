@@ -1,0 +1,8 @@
+{
+  // This project uses `erasableSyntaxOnly` (TS 5.8+) and
+  // `rewriteRelativeImportExtensions` (TS 5.7+). VS Code ships its own
+  // TypeScript, which may be older and would flag valid code — so point it at
+  // the version in devDependencies instead.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
+}
