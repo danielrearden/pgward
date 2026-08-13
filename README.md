@@ -484,10 +484,17 @@ Helpers like `relationName`, `typeNameOf`, `alterTableCommands`, `columnConstrai
 | `limit-long-running-statements` | error | ✓ | `maxPerMigration`, `countedStatements` |
 | `bound-session-default-timeouts` | error | ✓ | `governedSettings`, `requiredUnit`, `allowDefault`, `banZero` |
 | `ban-ddl-in-dynamic-sql` | error | ✓ | `watchedStatements`, `banDynamicExecute` |
-| `ban-mixed-transactional-modes` | error | ✓ | `requireDeclarationWhenOnlyConcurrent` |
+| `ban-mixed-transactional-modes` | error | ✓ | `exemptStatements`, `requireDeclarationWhenOnlyConcurrent` |
 
 `ban-ddl-in-dynamic-sql` is what makes a parser sufficient: it removes the only case a parser
 can't see.
+
+`ban-mixed-transactional-modes` reads two things off your runner rather than off the SQL.
+Whether the file is wrapped comes from `implicitTransaction`, above. Which statements the runner
+lets sit beside a concurrent one comes from `exemptStatements`, which defaults to `SET` and
+`RESET` — a runner that special-cases session settings. Flyway is not one of those: it counts a
+`SET` like any other statement and refuses the file at parse time, so configure it with
+`exemptStatements: []`.
 
 ### Locks, rewrites, and changes that break running clients
 

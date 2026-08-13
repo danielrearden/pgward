@@ -1,10 +1,22 @@
-import { isResetStatement, isSetStatement, isTransactionControl, usesConcurrently } from '../ast.ts';
+import { isTransactionControl, usesConcurrently } from '../ast.ts';
 import { defineRule } from '../define-rule.ts';
+import { assertKnownStatementKinds, matchesAnyStatementKind } from '../statement-kinds.ts';
 
 export interface BanMixedTransactionalModesOptions {
   /**
+   * Statement kinds the runner doesn't count when it decides a file mixes
+   * execution modes. `SET` and `RESET` by default, which is what a runner that
+   * special-cases session settings does.
+   *
+   * Which statements get that treatment is the runner's business, not
+   * Postgres's: Flyway counts them like any other, so a `SET` beside a
+   * concurrent build is rejected at parse time on the deploy. Pass `[]` for a
+   * runner like that.
+   */
+  exemptStatements: string[];
+  /**
    * Whether a migration made up entirely of CONCURRENTLY statements and
-   * session settings still has to declare itself non-transactional. It does by
+   * exempt statements still has to declare itself non-transactional. It does by
    * default: the runner wraps it regardless, and CONCURRENTLY cannot run
    * inside a transaction block.
    *
@@ -23,7 +35,19 @@ export const banMixedTransactionalModes = defineRule<BanMixedTransactionalModesO
       'in review.',
     help: "Declare this migration non-transactional so the runner doesn't wrap it.",
     defaultSeverity: 'error',
-    defaultOptions: { requireDeclarationWhenOnlyConcurrent: true },
+    defaultOptions: {
+      exemptStatements: ['SET', 'RESET'],
+      requireDeclarationWhenOnlyConcurrent: true,
+    },
+    normalizeOptions(raw, defaults) {
+      const options = { ...defaults, ...(raw as object) };
+      assertKnownStatementKinds(
+        'ban-mixed-transactional-modes',
+        'exemptStatements',
+        options.exemptStatements,
+      );
+      return options;
+    },
   },
   create(context) {
     const { options, source } = context;
@@ -36,12 +60,13 @@ export const banMixedTransactionalModes = defineRule<BanMixedTransactionalModesO
         const concurrent = source.statements.filter(usesConcurrently);
         if (concurrent.length === 0) return;
 
+        // BEGIN/COMMIT are never counted: they are what the mode is, not a statement the file
+        // runs under it, and transaction-nesting owns them.
         const transactional = source.statements.filter(
           (statement) =>
             !usesConcurrently(statement) &&
-            !isSetStatement(statement) &&
-            !isResetStatement(statement) &&
-            !isTransactionControl(statement),
+            !isTransactionControl(statement) &&
+            !matchesAnyStatementKind(statement, options.exemptStatements),
         );
 
         if (transactional.length === 0 && !options.requireDeclarationWhenOnlyConcurrent) return;
@@ -92,6 +117,16 @@ export const banMixedTransactionalModes = defineRule<BanMixedTransactionalModesO
         sql: "SET statement_timeout = '45min';\nRESET lock_timeout;\nREINDEX TABLE CONCURRENTLY t;",
         options: { requireDeclarationWhenOnlyConcurrent: false },
       },
+      {
+        name: 'a runner that counts settings still accepts a concurrent-only file',
+        sql: 'CREATE INDEX CONCURRENTLY idx ON t (a);',
+        options: { exemptStatements: [], requireDeclarationWhenOnlyConcurrent: false },
+      },
+      {
+        name: 'widening the exemption covers another statement kind',
+        sql: 'CREATE INDEX CONCURRENTLY idx ON t (a);\nTRUNCATE t;',
+        options: { exemptStatements: ['TRUNCATE'], requireDeclarationWhenOnlyConcurrent: false },
+      },
     ],
     invalid: [
       {
@@ -136,6 +171,14 @@ export const banMixedTransactionalModes = defineRule<BanMixedTransactionalModesO
         sql: 'REINDEX TABLE CONCURRENTLY t;\nALTER TABLE t ADD COLUMN c int;',
         options: { requireDeclarationWhenOnlyConcurrent: false },
         errors: [{ message: 'it also contains 1 transactional statement' }],
+      },
+      {
+        // Flyway is one of these: it marks a SET as executable in a transaction, so it refuses
+        // the file at parse time rather than running it.
+        name: 'a runner that counts settings rejects a SET beside a concurrent build',
+        sql: "SET statement_timeout = '45min';\nCREATE INDEX CONCURRENTLY idx ON t (a);\nRESET statement_timeout;",
+        options: { exemptStatements: [], requireDeclarationWhenOnlyConcurrent: false },
+        errors: [{ line: 2, message: 'it also contains 2 transactional statements' }],
       },
     ],
   },
