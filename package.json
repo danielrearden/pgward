@@ -1,6 +1,6 @@
 {
   "name": "pgward",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A configurable linter for Postgres DDL and migrations",
   "license": "MIT",
   "author": "Daniel Rearden <danielrearden@gmail.com>",

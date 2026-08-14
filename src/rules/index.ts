@@ -26,6 +26,7 @@ import { invalidSuppression, parseError } from './core.ts';
 import { disallowedUniqueConstraint } from './disallowed-unique-constraint.ts';
 import { identifierTooLong } from './identifier-too-long.ts';
 import { limitLongRunningStatements } from './limit-long-running-statements.ts';
+import { migrationFilenameFormat } from './migration-filename-format.ts';
 import { preferBigintOverInt } from './prefer-bigint-over-int.ts';
 import { preferBigintOverSmallint } from './prefer-bigint-over-smallint.ts';
 import { preferIdentity } from './prefer-identity.ts';
@@ -68,6 +69,7 @@ export const builtinRules = {
   'bound-session-default-timeouts': boundSessionDefaultTimeouts,
   'ban-ddl-in-dynamic-sql': banDdlInDynamicSql,
   'ban-mixed-transactional-modes': banMixedTransactionalModes,
+  'migration-filename-format': migrationFilenameFormat,
 
   'constraint-missing-not-valid': constraintMissingNotValid,
   'disallowed-unique-constraint': disallowedUniqueConstraint,
@@ -157,6 +159,7 @@ export const recommended: RulesConfig = Object.freeze(
     'bound-session-default-timeouts',
     'ban-ddl-in-dynamic-sql',
     'ban-mixed-transactional-modes',
+    'migration-filename-format',
 
     'constraint-missing-not-valid',
     'disallowed-unique-constraint',

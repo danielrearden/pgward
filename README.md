@@ -470,7 +470,7 @@ Helpers like `relationName`, `typeNameOf`, `alterTableCommands`, `columnConstrai
 
 ## Rules
 
-46 rules. `rec` marks membership in `configs.recommended`.
+47 rules. `rec` marks membership in `configs.recommended`.
 
 ### Timeouts, locks and migration mechanics
 
@@ -485,9 +485,17 @@ Helpers like `relationName`, `typeNameOf`, `alterTableCommands`, `columnConstrai
 | `bound-session-default-timeouts` | error | ✓ | `governedSettings`, `requiredUnit`, `allowDefault`, `banZero` |
 | `ban-ddl-in-dynamic-sql` | error | ✓ | `watchedStatements`, `banDynamicExecute` |
 | `ban-mixed-transactional-modes` | error | ✓ | `exemptStatements`, `requireDeclarationWhenOnlyConcurrent` |
+| `migration-filename-format` | error | ✓ | `pattern` |
 
 `ban-ddl-in-dynamic-sql` is what makes a parser sufficient: it removes the only case a parser
 can't see.
+
+`migration-filename-format` is the one rule that looks at the name rather than the SQL, since
+that is where runners keep the version and the ordering. It is inert until you give it a
+`pattern`, because no two runners spell the convention the same way. The pattern is tested
+against the filename exactly as you passed it in, so hand the linter paths relative to your
+migrations directory and one alternation covers a tree with both versioned and repeatable
+migrations in it.
 
 `ban-mixed-transactional-modes` reads two things off your runner rather than off the SQL.
 Whether the file is wrapped comes from `implicitTransaction`, above. Which statements the runner
